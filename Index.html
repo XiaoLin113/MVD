@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tra Cứu Đơn Hàng Giao</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<style>
+  body { font-family: Arial, sans-serif; margin:0; background:#f4f6f9; color:#333; }
+  .container { max-width:950px; margin:auto; padding:15px; }
+  .card { background:white; padding:20px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.08); } 
+  input, select, button, textarea { padding:10px; margin:5px 0; width:100%; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
+  button { background:#007bff; color:white; border:none; cursor:pointer; font-weight:bold; }
+  button:hover { background:#0056b3; }
+  .btn-danger { background:#dc3545; }
+  .btn-danger:hover { background:#bd2130; }
+  
+  table { width:100%; border-collapse:collapse; margin-top:10px; }
+  th, td { padding:10px; border-bottom:1px solid #ddd; text-align:center; }
+  th { background:#f8f9fa; }
+  
+  .badge { padding:4px 8px; border-radius:4px; color:white; font-size:0.85em; display:inline-block; }
+  .badge-sent { background:#ffc107; color:#212529; } /* Đã gửi - màu vàng */
+  .badge-success { background:#28a745; } /* Thành công - màu xanh */
+  
+  .hidden { display:none !important; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; }
+  .search-box { background:#e9ecef; border-left:4px solid #007bff; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Thanh tiêu đề & Đăng nhập -->
+  <div class="topbar card">
+    <h2>📦 Tra Cứu & Quản Lý Đơn Hàng</h2>
+    <div>
+      <button id="loginBtn" style="width:auto; padding:8px 15px;">Đăng nhập Admin</button>
+      <button id="logoutBtn" class="hidden btn-danger" style="width:auto; padding:8px 15px;">Đăng xuất</button>
+    </div>
+  </div>
+
+  <!-- Form đăng nhập Admin -->
+  <div id="loginBox" class="card hidden">
+    <h3>Đăng Nhập Quản Trị Viên</h3>
+    <input type="text" id="username" placeholder="Tên đăng nhập">
+    <input type="password" id="password" placeholder="Mật khẩu">
+    <button id="loginSubmit">Xác nhận Đăng nhập</button>
+  </div>
+
+  <!-- Bảng điều khiển dành cho Admin -->
+  <div id="adminPanel" class="card hidden">
+    <h3 style="color:#007bff; margin-top:0;">➕ Thêm Đơn Hàng Mới</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+      <input type="text" id="customerName" placeholder="Tên FB / Threads khách">
+      <input type="text" id="mvd" placeholder="Mã vận đơn (MVD)">
+      <input type="text" id="orderContent" placeholder="Nội dung đơn (Ví dụ: Áo thun, Son môi...)">
+      <select id="status">
+        <option value="Đã gửi">Đã gửi</option>
+        <option value="Thành công">Thành công</option>
+      </select>
+    </div>
+    <button id="addBtn" style="margin-top:10px;">Thêm Đơn Hàng</button>
+  </div>
+
+  <!-- Ô tìm kiếm dành cho Khách & Admin -->
+  <div class="card search-box">
+    <h3 style="margin-top:0;">🔍 Tra cứu đơn hàng của bạn</h3>
+    <input type="text" id="searchInput" placeholder="Nhập tên FB/Threads hoặc Mã vận đơn (MVD) để tìm...">
+  </div>
+
+  <!-- Danh sách đơn hàng -->
+  <div class="card">
+    <h3>📋 Danh Sách Đơn Hàng</h3>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Ngày tạo</th>
+            <th>Tên FB / Threads</th>
+            <th>Mã vận đơn (MVD)</th>
+            <th>Nội dung đơn</th>
+            <th>Trạng thái</th>
+            <th class="admin-only hidden">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="ordersList">
+          <tr><td colspan="6">Đang tải dữ liệu...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== CẤU HÌNH FIREBASE =====
+const firebaseConfig = {
+  apiKey: "AIzaSyA18QOQP5Npb-YjeoqaxSQDb8SL3UE-lE4",
+  authDomain: "quyto-2ac7d.firebaseapp.com",
+  projectId: "quyto-2ac7d",
+  storageBucket: "quyto-2ac7d.firebasestorage.app",
+  messagingSenderId: "343716551161",
+  appId: "1:343716551161:web:c71cee317cf913cf984528",
+  measurementId: "G-4Q5KC7QNTV"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ===== THÔNG TIN TÀI KHOẢN ADMIN =====
+const ADMIN_USER = "To1";
+const ADMIN_PASS = "Nhieutien$2026";
+let isAdmin = false;
+let rawOrdersData = []; 
+
+// DOM elements
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const loginBox = document.getElementById('loginBox');
+const adminPanel = document.getElementById('adminPanel');
+const ordersList = document.getElementById('ordersList');
+const searchInput = document.getElementById('searchInput');
+
+// Event Listeners
+loginBtn.onclick = () => loginBox.classList.toggle('hidden');
+logoutBtn.onclick = logout;
+document.getElementById('loginSubmit').onclick = login;
+document.getElementById('addBtn').onclick = addOrder;
+searchInput.oninput = filterOrders;
+
+// ===== ĐĂNG NHẬP / ĐĂNG XUẤT =====
+function login(){
+  let u = document.getElementById('username').value;
+  let p = document.getElementById('password').value;
+
+  if(u === ADMIN_USER && p === ADMIN_PASS){
+    isAdmin = true;
+    adminPanel.classList.remove('hidden');
+    loginBtn.classList.add('hidden');
+    logoutBtn.classList.remove('hidden');
+    loginBox.classList.add('hidden');
+    
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    renderOrders(rawOrdersData);
+  } else {
+    alert('Sai tài khoản hoặc mật khẩu!');
+  }
+}
+
+function logout(){
+  isAdmin = false;
+  adminPanel.classList.add('hidden');
+  loginBtn.classList.remove('hidden');
+  logoutBtn.classList.add('hidden');
+  
+  document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+  renderOrders(rawOrdersData);
+}
+
+// ===== ĐỌC DỮ LIỆU TỪ FIREBASE =====
+db.collection("orders").onSnapshot(snapshot => {
+  rawOrdersData = [];
+  snapshot.forEach(doc => {
+    rawOrdersData.push({ id: doc.id, ...doc.data() });
+  });
+
+  rawOrdersData.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  renderOrders(rawOrdersData);
+}, err => {
+  console.error("Lỗi đọc dữ liệu:", err);
+});
+
+// ===== RENDER BẢNG ĐƠN HÀNG =====
+function renderOrders(data) {
+  ordersList.innerHTML = '';
+
+  if (data.length === 0) {
+    ordersList.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}">Không tìm thấy đơn hàng nào</td></tr>`;
+    return;
+  }
+
+  data.forEach(item => {
+    let statusBadge = item.status === 'Thành công' 
+      ? `<span class="badge badge-success">Thành công</span>` 
+      : `<span class="badge badge-sent">Đã gửi</span>`;
+
+    let adminActions = isAdmin 
+      ? `<td class="admin-only">
+          <button onclick="toggleStatus('${item.id}', '${item.status}')" style="width:auto; padding:4px 8px; font-size:12px;">Đổi Trạng Thái</button>
+          <button onclick="deleteOrder('${item.id}')" class="btn-danger" style="width:auto; padding:4px 8px; font-size:12px;">Xóa</button>
+         </td>` 
+      : `<td class="admin-only hidden"></td>`;
+
+    let row = `<tr>
+      <td>${item.date || ''}</td>
+      <td><strong>${item.customerName || ''}</strong></td>
+      <td><code>${item.mvd || ''}</code></td>
+      <td>${item.orderContent || ''}</td>
+      <td>${statusBadge}</td>
+      ${adminActions}
+    </tr>`;
+
+    ordersList.innerHTML += row;
+  });
+}
+
+// ===== TÌM KIẾM DÀNH CHO KHÁCH =====
+function filterOrders() {
+  let keyword = searchInput.value.toLowerCase().trim();
+  
+  if (!keyword) {
+    renderOrders(rawOrdersData);
+    return;
+  }
+
+  let filtered = rawOrdersData.filter(item => {
+    let nameMatch = (item.customerName || '').toLowerCase().includes(keyword);
+    let mvdMatch = (item.mvd || '').toLowerCase().includes(keyword);
+    return nameMatch || mvdMatch;
+  });
+
+  renderOrders(filtered);
+}
+
+// ===== THÊM ĐƠN HÀNG (ADMIN) =====
+function addOrder() {
+  if (!isAdmin) return;
+
+  let customerName = document.getElementById('customerName').value.trim();
+  let mvd = document.getElementById('mvd').value.trim();
+  let orderContent = document.getElementById('orderContent').value.trim();
+  let status = document.getElementById('status').value;
+
+  if (!customerName || !mvd) {
+    alert('Vui lòng điền đầy đủ Tên FB/Thr và Mã vận đơn!');
+    return;
+  }
+
+  let now = new Date();
+  let dateStr = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
+
+  db.collection("orders").add({
+    customerName: customerName,
+    mvd: mvd,
+    orderContent: orderContent,
+    status: status,
+    date: dateStr,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    // Reset form
+    document.getElementById('customerName').value = '';
+    document.getElementById('mvd').value = '';
+    document.getElementById('orderContent').value = '';
+  }).catch(err => {
+    alert("Lỗi khi thêm đơn: " + err.message);
+  });
+}
+
+// ===== XÓA ĐƠN HÀNG (ADMIN) =====
+function deleteOrder(id) {
+  if (!isAdmin) return;
+  if (confirm("Bạn có chắc muốn xóa đơn hàng này?")) {
+    db.collection("orders").doc(id).delete();
+  }
+}
+
+// ===== ĐỔI TRẠNG THÁI NHANH (ADMIN) =====
+function toggleStatus(id, currentStatus) {
+  if (!isAdmin) return;
+  let newStatus = currentStatus === 'Đã gửi' ? 'Thành công' : 'Đã gửi';
+  db.collection("orders").doc(id).update({
+    status: newStatus
+  });
+}
+</script>
+</body>
+</html>
