@@ -9,67 +9,156 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
+<!-- Google Font (Phông chữ bo tròn đáng yêu) -->
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+
 <style>
-  body { font-family: Arial, sans-serif; margin:0; background:#f4f6f9; color:#333; }
-  .container { max-width:950px; margin:auto; padding:15px; }
-  .card { background:white; padding:20px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.08); } 
-  input, select, button, textarea { padding:10px; margin:5px 0; width:100%; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
-  button { background:#007bff; color:white; border:none; cursor:pointer; font-weight:bold; }
-  button:hover { background:#0056b3; }
-  .btn-danger { background:#dc3545; }
-  .btn-danger:hover { background:#bd2130; }
+  :root {
+    --pink-primary: #ffb6c1; /* Hồng pastel */
+    --pink-light: #fff0f3;
+    --blue-primary: #b4e1ff; /* Xanh pastel */
+    --blue-hover: #99d2ff;
+    --text-color: #555555;
+  }
+
+  body { 
+    font-family: 'Quicksand', sans-serif; 
+    margin: 0; 
+    padding: 20px 10px;
+    color: var(--text-color);
+    /* Nền trang chuyển thành gradient xanh - hồng pastel nhẹ nhàng, sạch sẽ */
+    background: linear-gradient(135deg, #f0f7ff 0%, #fff0f5 100%);
+    min-height: 100vh;
+  }
+
+  /* KHUNG HIỂN THỊ CHÍNH MÀU TRẮNG BO TRÒN */
+  .container { 
+    max-width: 900px; 
+    margin: auto; 
+    padding: 25px; 
+    background-color: #ffffff; 
+    border-radius: 25px; /* Bo tròn mềm mại */
+    box-shadow: 0 10px 30px rgba(255, 182, 193, 0.2); /* Bóng hồng nhẹ */
+    border: 3px solid #ffe4e9; 
+  }
+
+  .card { 
+    background: #faf9fb; 
+    padding: 20px; 
+    border-radius: 18px; 
+    margin-bottom: 20px; 
+    border: 1px solid #f0edf2;
+  } 
+
+  /* Ô nhập liệu bo tròn, tinh tế */
+  input, select, textarea { 
+    padding: 12px 15px; 
+    margin: 8px 0; 
+    width: 100%; 
+    border-radius: 15px; 
+    border: 2px solid #e8e1e8; 
+    box-sizing: border-box; 
+    font-family: 'Quicksand', sans-serif;
+    outline: none;
+    transition: 0.3s;
+    background: #ffffff;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--pink-primary);
+    box-shadow: 0 0 8px rgba(255, 182, 193, 0.4);
+  }
+
+  /* Nút bấm tone xanh / hồng */
+  button { 
+    background: var(--blue-primary); 
+    color: #333333; 
+    border: none; 
+    cursor: pointer; 
+    font-weight: bold; 
+    border-radius: 15px; 
+    padding: 12px 20px;
+    font-family: 'Quicksand', sans-serif;
+    transition: all 0.3s ease;
+  }
+
+  button:hover { 
+    background: var(--blue-hover); 
+    transform: translateY(-2px);
+  }
+
+  .btn-pink {
+    background: var(--pink-primary);
+    color: #fff;
+  }
+  .btn-pink:hover {
+    background: #ffa1ad;
+  }
+
+  .btn-danger { background: #ff9999; color: white; }
+  .btn-danger:hover { background: #ff7f7f; }
   
-  table { width:100%; border-collapse:collapse; margin-top:10px; }
-  th, td { padding:10px; border-bottom:1px solid #ddd; text-align:center; }
-  th { background:#f8f9fa; }
+  /* Bảng danh sách */
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 12px; text-align: center; }
+  th { background: #fce4ec; color: #d81b60; font-weight: 700; border-top-left-radius: 10px; border-top-right-radius: 10px; }
+  td { border-bottom: 1px solid #f0e6ec; }
   
-  .badge { padding:4px 8px; border-radius:4px; color:white; font-size:0.85em; display:inline-block; }
-  .badge-sent { background:#ffc107; color:#212529; } /* Đã gửi - màu vàng */
-  .badge-success { background:#28a745; } /* Thành công - màu xanh */
+  /* Trạng thái (Badge) */
+  .badge { padding: 6px 12px; border-radius: 15px; color: white; font-size: 0.85em; font-weight: bold; display: inline-block; }
+  .badge-sent { background: #ffcc80; color: #5d4037; } /* Đã gửi - vàng cam pastel */
+  .badge-success { background: #a5d6a7; color: #1b5e20; } /* Thành công - xanh lá pastel */
   
-  .hidden { display:none !important; }
-  .topbar { display:flex; justify-content:space-between; align-items:center; }
-  .search-box { background:#e9ecef; border-left:4px solid #007bff; }
+  .hidden { display: none !important; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
+  
+  h2, h3 { color: #d81b60; font-weight: 700; margin-top: 0; }
+  
+  .search-box { 
+    background: #e3f2fd; /* Xanh dương nhạt cho khung tìm kiếm */
+    border-left: 5px solid #90caf9;
+  }
 </style>
 </head>
 <body>
+
 <div class="container">
 
   <!-- Thanh tiêu đề & Đăng nhập -->
   <div class="topbar card">
-    <h2>📦 Tra Cứu & Quản Lý Đơn Hàng</h2>
+    <h2>🎀 Quản Lý & Tra Cứu Đơn Hàng</h2>
     <div>
-      <button id="loginBtn" style="width:auto; padding:8px 15px;">Đăng nhập Admin</button>
+      <button id="loginBtn" class="btn-pink" style="width:auto; padding:8px 15px;">Đăng nhập Admin</button>
       <button id="logoutBtn" class="hidden btn-danger" style="width:auto; padding:8px 15px;">Đăng xuất</button>
     </div>
   </div>
 
   <!-- Form đăng nhập Admin -->
   <div id="loginBox" class="card hidden">
-    <h3>Đăng Nhập Quản Trị Viên</h3>
+    <h3>🔐 Đăng Nhập Quản Trị Viên</h3>
     <input type="text" id="username" placeholder="Tên đăng nhập">
     <input type="password" id="password" placeholder="Mật khẩu">
-    <button id="loginSubmit">Xác nhận Đăng nhập</button>
+    <button id="loginSubmit" class="btn-pink">Xác nhận Đăng nhập</button>
   </div>
 
   <!-- Bảng điều khiển dành cho Admin -->
   <div id="adminPanel" class="card hidden">
-    <h3 style="color:#007bff; margin-top:0;">➕ Thêm Đơn Hàng Mới</h3>
+    <h3 style="color: #1e88e5;">✨ Thêm Đơn Hàng Mới</h3>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
       <input type="text" id="customerName" placeholder="Tên FB / Threads khách">
       <input type="text" id="mvd" placeholder="Mã vận đơn (MVD)">
-      <input type="text" id="orderContent" placeholder="Nội dung đơn (Ví dụ: Áo thun, Son môi...)">
+      <input type="text" id="orderContent" placeholder="Nội dung đơn (Ví dụ: Áo thun, Son...)">
       <select id="status">
         <option value="Đã gửi">Đã gửi</option>
         <option value="Thành công">Thành công</option>
       </select>
     </div>
-    <button id="addBtn" style="margin-top:10px;">Thêm Đơn Hàng</button>
+    <button id="addBtn" class="btn-pink" style="margin-top:10px;">Thêm Đơn Hàng</button>
   </div>
 
   <!-- Ô tìm kiếm dành cho Khách & Admin -->
   <div class="card search-box">
-    <h3 style="margin-top:0;">🔍 Tra cứu đơn hàng của bạn</h3>
+    <h3 style="color: #1565c0;">🔍 Tra cứu đơn hàng của bạn</h3>
     <input type="text" id="searchInput" placeholder="Nhập tên FB/Threads hoặc Mã vận đơn (MVD) để tìm...">
   </div>
 
@@ -80,7 +169,6 @@
       <table>
         <thead>
           <tr>
-            <th>Ngày tạo</th>
             <th>Tên FB / Threads</th>
             <th>Mã vận đơn (MVD)</th>
             <th>Nội dung đơn</th>
@@ -89,7 +177,7 @@
           </tr>
         </thead>
         <tbody id="ordersList">
-          <tr><td colspan="6">Đang tải dữ liệu...</td></tr>
+          <tr><td colspan="5">Đang tải dữ liệu...</td></tr>
         </tbody>
       </table>
     </div>
@@ -179,8 +267,9 @@ db.collection("orders").onSnapshot(snapshot => {
 function renderOrders(data) {
   ordersList.innerHTML = '';
 
+  let colSpanCount = isAdmin ? 5 : 4;
   if (data.length === 0) {
-    ordersList.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}">Không tìm thấy đơn hàng nào</td></tr>`;
+    ordersList.innerHTML = `<tr><td colspan="${colSpanCount}">Không tìm thấy đơn hàng nào</td></tr>`;
     return;
   }
 
@@ -190,14 +279,13 @@ function renderOrders(data) {
       : `<span class="badge badge-sent">Đã gửi</span>`;
 
     let adminActions = isAdmin 
-      ? `<td class="admin-only">
-          <button onclick="toggleStatus('${item.id}', '${item.status}')" style="width:auto; padding:4px 8px; font-size:12px;">Đổi Trạng Thái</button>
-          <button onclick="deleteOrder('${item.id}')" class="btn-danger" style="width:auto; padding:4px 8px; font-size:12px;">Xóa</button>
+      ? `<td class="admin-only" style="display:flex; gap:5px; justify-content:center;">
+          <button onclick="toggleStatus('${item.id}', '${item.status}')" style="width:auto; padding:5px 10px; font-size:11px;">Đổi Trạng Thái</button>
+          <button onclick="deleteOrder('${item.id}')" class="btn-danger" style="width:auto; padding:5px 10px; font-size:11px;">Xóa</button>
          </td>` 
       : `<td class="admin-only hidden"></td>`;
 
     let row = `<tr>
-      <td>${item.date || ''}</td>
       <td><strong>${item.customerName || ''}</strong></td>
       <td><code>${item.mvd || ''}</code></td>
       <td>${item.orderContent || ''}</td>
@@ -241,15 +329,11 @@ function addOrder() {
     return;
   }
 
-  let now = new Date();
-  let dateStr = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
-
   db.collection("orders").add({
     customerName: customerName,
     mvd: mvd,
     orderContent: orderContent,
     status: status,
-    date: dateStr,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   }).then(() => {
     // Reset form
